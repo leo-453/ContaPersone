@@ -9,3 +9,5 @@ Ho quindi ripiegato su ESP32
 Allo stato quindi abbiamo: Scheda WiFi_Terminal connessa via seriale a ESP-WROOM-32
 STM32 legge il sensore e trasmette via seriale il set di 64 misure.
 WiFI_Terminal, riceve le misure e le rende disponibile via TCP sulla porta 9000
+
+Il programma HeatMap.py gira su PC per visualizzare la mappa delle distanze
