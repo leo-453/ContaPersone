@@ -1,0 +1,136 @@
+
+/*
+Questo codice funziona senza problemi su ESP32, selezionata ESP32 DEV BOARD
+ma credo che funzioni anche con la WROOM DA 
+Collegati solo 4 fili: +5,GND,SCL,SDA
+Versione adattata a trasmettere frames via seriale
+Sul modulo ESP32: GPIO22 = SCL  GPIO21 = SDA 
+v04: elimminato START-STOP, riportato a  64 valori
+*/
+
+#include <Wire.h>
+#include <Adafruit_VL53L5CX.h>
+
+Adafruit_VL53L5CX sensor;
+VL53L5CX_ResultsData results;
+
+// Flag per abilitare/disabilitare lo streaming
+bool streamEnabled = false;
+
+// Buffer per comandi in arrivo via seriale
+String cmdBuffer = "";
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  pinMode(2, OUTPUT);
+
+  Wire.begin(21, 22);
+  Wire.setClock(400000);
+
+    // Blink iniziale 
+  for(int i=0;i<10;i++){
+     digitalWrite(2,HIGH);
+     delay(100);
+     digitalWrite(2,LOW);
+     delay(100);
+  }
+  
+  if (!sensor.begin()) {
+    Serial.println("ERR:VL53_NOT_FOUND");
+    while (1);
+  }
+delay(300);
+  sensor.setResolution(VL53L5CX_RESOLUTION_8X8);
+  sensor.setRangingFrequency(10);
+  sensor.startRanging();
+
+  Serial.println("VL53:READY");
+}
+
+// Gestione comandi via seriale
+void processCommand(String cmd) {
+
+    if (cmd == "VL53_START") {
+        streamEnabled = true;
+        Serial.println("VL53:STREAM_ON");
+        return;
+    }
+
+    if (cmd == "VL53_STOP") {
+        streamEnabled = false;
+        Serial.println("VL53:STREAM_OFF");
+        return;
+    }
+}
+
+// Lettura comandi dalla seriale
+void readSerialCommands() {
+    while (Serial.available()) {
+        char c = Serial.read();
+
+        if (c == '\r') continue;
+
+        if (c != '\n') {
+            cmdBuffer += c;
+            continue;
+        }
+
+        // Fine riga
+        String cmd = cmdBuffer;
+        cmdBuffer = "";
+        cmd.trim();
+
+        if (cmd.length() > 0) {
+            processCommand(cmd);
+        }
+    }
+}
+
+bool dummy = true;
+
+void loop() {
+
+  // Gestione comandi in arrivo
+  readSerialCommands();
+
+  // Streaming attivo?
+ // if (!streamEnabled) {
+ //   delay(10);
+ //   return;
+ // }
+
+  // Lettura sensore
+  if (sensor.getRangingData(&results)) {
+
+    // Blink LED per debug
+    dummy = !dummy;
+    digitalWrite(2, dummy ? HIGH : LOW);
+
+    // Invio frame
+    Serial.print("VL53|");
+
+  const int idx4x4[16] = {
+    18,19,20,21,
+    26,27,28,29,
+    34,35,36,37,
+    42,43,44,45
+};
+
+//for (int i = 0; i < 16; i++) {
+//    Serial.print(results.distance_mm[idx4x4[i]]);
+//    if (i < 15) Serial.print(",");
+//}
+for (int i = 0; i < 64; i++) {
+    Serial.print(results.distance_mm[i]);
+    if (i < 63) Serial.print(",");
+}
+Serial.print("\n");
+
+
+    Serial.print("\n");
+  }
+
+  delay(50);   // Stabilizza il flusso
+}
