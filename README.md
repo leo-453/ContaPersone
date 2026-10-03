@@ -1,5 +1,6 @@
 # ContaPersone
-Progetto Conta Accessi
+Progetto Conta Accessi:
+
 Il progetto intende contare ingressi-uscite dalla Biblioteca usando un sensore VL53L5CX che misura le distanze
 per via ottica ed ha un campo visivo largo circa 62 gradi. Tale campo è diviso in 64 pixel su matrice 8x8
 
